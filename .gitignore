@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+settings.json
+.wheels/
+tools/last_frame.png
+dist/
+build/work/
+build/ffmpeg/
+build/*.spec
+build/build.log

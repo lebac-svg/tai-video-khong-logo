@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tải video không logo</title>
+<meta name="description" content="Dán link TikTok, YouTube, Facebook, Instagram, X… và tải video gốc không logo về máy.">
+<link rel="icon" type="image/png" href="/static/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&family=Oswald:wght@500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F3;
+  --paper:#FFFFFF;
+  --ink:#0F1B2D;
+  --ink-2:#4A5668;
+  --ink-3:#8A94A6;
+  --line:#D9DFE6;
+  --line-2:#EBEFF2;
+  --teal:#0C7C7A;
+  --teal-2:#095E5C;
+  --teal-soft:#E0F1F0;
+  --stamp:#D7263D;
+  --stamp-soft:#FBE4E7;
+  --amber:#B45309;
+  --amber-soft:#FDF0E0;
+  --radius:16px;
+  --font-body:'Be Vietnam Pro','Segoe UI',system-ui,-apple-system,sans-serif;
+  --font-label:'Oswald','Arial Narrow',sans-serif;
+  --font-mono:'IBM Plex Mono',Consolas,'Courier New',monospace;
+  --shadow:0 1px 2px rgba(15,27,45,.06),0 8px 24px -12px rgba(15,27,45,.18);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  min-height:100vh;display:flex;flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:3px solid rgba(12,124,122,.4);outline-offset:2px;border-radius:8px}
+[hidden]{display:none!important}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+.mono{font-family:var(--font-mono);font-size:.88em;letter-spacing:-.01em}
+.eyebrow{font-family:var(--font-label);font-weight:500;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+
+/* ---------- khung ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;max-width:860px;width:100%;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-label);font-weight:600;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
+.brand__mark{width:22px;height:22px;border:3px double var(--stamp);border-radius:6px;transform:rotate(-12deg);display:inline-block}
+.top__right{display:flex;align-items:center;gap:6px}
+.link{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2);padding:8px 10px;border-radius:10px;font-size:14px;max-width:340px}
+.link:hover{background:rgba(15,27,45,.06);color:var(--ink)}
+.link span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;color:var(--ink-2)}
+.iconbtn:hover{background:rgba(15,27,45,.06);color:var(--ink)}
+.iconbtn svg,.link svg{width:18px;height:18px;flex:none}
+
+.wrap{max-width:860px;width:100%;margin:0 auto;padding:8px 24px 48px;flex:1}
+.foot{max-width:860px;width:100%;margin:0 auto;padding:16px 24px 28px;color:var(--ink-3);font-size:13px}
+
+/* ---------- hero ---------- */
+.hero{padding:40px 0 20px}
+h1{font-size:clamp(32px,5.2vw,46px);font-weight:800;line-height:1.04;letter-spacing:-.025em;margin:0 0 14px;max-width:16ch}
+h1 em{font-style:normal;color:var(--teal)}
+.lede{margin:0 0 26px;color:var(--ink-2);font-size:16px;max-width:56ch}
+.paste{
+  display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;
+  background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:7px;box-shadow:var(--shadow);
+  transition:border-color .15s,box-shadow .15s;
+}
+.paste:focus-within{border-color:var(--teal);box-shadow:0 0 0 4px rgba(12,124,122,.14),var(--shadow)}
+.paste__btn{font-family:var(--font-label);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--teal);padding:0 14px;height:46px;border-radius:12px;border:1px dashed rgba(12,124,122,.45)}
+.paste__btn:hover{background:var(--teal-soft)}
+.paste input{border:0;background:transparent;min-width:0;height:46px;padding:0 8px;font-size:16px;outline:none}
+.paste input::placeholder{color:var(--ink-3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 20px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid transparent;transition:background .15s,transform .05s;white-space:nowrap}
+.btn:active{transform:translateY(1px)}
+.btn--primary{background:var(--teal);color:#fff}
+.btn--primary:hover{background:var(--teal-2)}
+.btn--primary[disabled]{background:var(--ink-3);cursor:wait}
+.btn--ghost{background:transparent;border-color:var(--line);color:var(--ink-2)}
+.btn--ghost:hover{background:rgba(15,27,45,.05);color:var(--ink)}
+.btn--lg{height:50px;padding:0 26px;font-size:16px}
+.btn--sm{height:34px;padding:0 12px;font-size:13px;border-radius:9px}
+.msg{margin:12px 4px 0;color:var(--stamp);font-weight:500}
+.msg--info{color:var(--ink-2);font-weight:400}
+.warn{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:var(--amber-soft);color:var(--amber);font-size:14px}
+.warn a{color:inherit}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+.update{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 0;padding:10px 14px;border-radius:12px;background:var(--teal-soft);color:var(--teal-2);font-size:14px}
+.update__actions{display:flex;gap:6px;align-items:center}
+.update .btn--sm{text-decoration:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- xem trước ---------- */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.preview{display:grid;grid-template-columns:172px 1fr;gap:24px;padding:22px;margin-top:22px;animation:rise .35s ease-out both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.preview__media{position:relative;width:172px;aspect-ratio:3/4;align-self:start}
+.preview__media img{width:100%;height:100%;object-fit:cover;border-radius:12px;background:linear-gradient(160deg,var(--line-2),var(--line));display:block}
+.preview__media img.is-list{aspect-ratio:auto}
+.preview__count{position:absolute;left:10px;top:10px;padding:3px 8px;border-radius:8px;background:rgba(15,27,45,.78);color:#fff;font-family:var(--font-label);font-size:13px;letter-spacing:.08em}
+.preview__body{min-width:0;display:flex;flex-direction:column;gap:14px}
+.preview__title{margin:0;font-size:18px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{margin:-6px 0 0;color:var(--ink-2);font-size:14px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.meta .site{font-family:var(--font-label);letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--teal);background:var(--teal-soft);padding:2px 8px;border-radius:6px}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.preset{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper);min-width:96px;text-align:left;transition:border-color .12s,background .12s}
+.preset b{font-weight:600;font-size:14px}
+.preset small{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-3);letter-spacing:-.01em}
+.preset:hover{border-color:var(--ink-3)}
+.preset[aria-checked="true"]{border-color:var(--teal);background:var(--teal-soft);box-shadow:inset 0 0 0 1px var(--teal)}
+.preset[aria-checked="true"] small{color:var(--teal-2)}
+.preset[disabled]{border-style:dashed;color:var(--ink-3);cursor:not-allowed;background:transparent}
+.preset[disabled] b{font-weight:500}
+.preview__actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:2px}
+.note{color:var(--ink-3);font-size:13px;max-width:36ch;line-height:1.4}
+.list{margin:0;padding:0;list-style:none;color:var(--ink-2);font-size:13px;display:grid;gap:2px}
+.list li{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* con dấu */
+.stamp{
+  position:absolute;right:-34px;bottom:18px;padding:7px 12px 6px;
+  font-family:var(--font-label);font-weight:600;font-size:15px;letter-spacing:.16em;text-transform:uppercase;line-height:1;
+  color:var(--stamp);border:3px double var(--stamp);border-radius:8px;white-space:nowrap;
+  transform:rotate(-12deg);mix-blend-mode:multiply;filter:url(#ink);opacity:.92;pointer-events:none;
+}
+.stamp--wm{color:var(--amber);border-color:var(--amber)}
+.stamp--in{animation:stamp .45s cubic-bezier(.2,1.5,.4,1) .25s both}
+@keyframes stamp{0%{opacity:0;transform:rotate(-22deg) scale(2.3)}65%{opacity:1;transform:rotate(-11deg) scale(.96)}100%{opacity:.92;transform:rotate(-12deg) scale(1)}}
+
+/* ---------- danh sách tải ---------- */
+.jobs{margin-top:34px}
+.jobs__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 4px 10px}
+.jobs__head .link{padding:4px 8px;font-size:13px}
+.joblist{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.job{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;padding:12px 14px}
+.job__thumb{width:56px;height:56px;border-radius:9px;object-fit:cover;background:linear-gradient(160deg,var(--line-2),var(--line));display:block}
+.job__main{min-width:0;display:grid;gap:6px}
+.job__title{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.job__status{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2);flex-wrap:wrap}
+.pill{font-family:var(--font-label);font-weight:500;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:2px 8px;border-radius:6px;background:var(--line-2);color:var(--ink-2)}
+.job--downloading .pill{background:var(--teal-soft);color:var(--teal-2)}
+.job--processing .pill{background:var(--amber-soft);color:var(--amber)}
+.job--done .pill{background:var(--teal);color:#fff}
+.job--error .pill{background:var(--stamp-soft);color:var(--stamp)}
+.job--error .job__error{color:var(--stamp)}
+.bar{height:4px;border-radius:99px;background:var(--line-2);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--teal);border-radius:99px;transition:width .4s ease}
+.job--processing .bar i{min-width:12%;background:repeating-linear-gradient(90deg,var(--amber) 0 14px,var(--amber-soft) 14px 28px);background-size:28px 100%;animation:stripe .7s linear infinite}
+.job--done .bar i{width:100%!important}
+.job--error .bar i{background:var(--stamp)}
+.job--cancelled .bar i{background:var(--ink-3)}
+@keyframes stripe{to{background-position:28px 0}}
+.job__actions{display:flex;gap:6px;align-items:center}
+.job__log{grid-column:1/-1;margin:0;padding:10px 12px;border-radius:10px;background:var(--bg);color:var(--ink-2);font-family:var(--font-mono);font-size:12px;white-space:pre-wrap;word-break:break-word;max-height:160px;overflow:auto}
+
+/* ---------- cài đặt ---------- */
+dialog{border:0;border-radius:20px;padding:0;width:min(560px,calc(100vw - 32px));box-shadow:0 30px 80px -20px rgba(15,27,45,.45);color:var(--ink)}
+dialog::backdrop{background:rgba(15,27,45,.45);backdrop-filter:blur(2px)}
+.dlg{padding:26px 26px 22px;display:grid;gap:20px}
+.dlg h2{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.field{display:grid;gap:6px}
+.field label,.field .lbl{font-weight:600;font-size:14px}
+.field .hint{color:var(--ink-3);font-size:13px;line-height:1.4}
+.row{display:flex;gap:8px;align-items:center}
+.row input{flex:1;min-width:0}
+input[type=text],select{height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:var(--paper);font-size:14px}
+input[type=text]:focus,select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(12,124,122,.14)}
+.radios{display:grid;gap:8px}
+.radios label{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.radios label:has(input:checked){border-color:var(--teal);background:var(--teal-soft)}
+.radios input{margin-top:3px;accent-color:var(--teal)}
+.radios .sub{display:grid;gap:6px;flex:1}
+.dlg__foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--line-2)}
+.dlg__foot .right{display:flex;gap:8px;margin-left:auto}
+.ver{color:var(--ink-3);font-size:13px}
+
+@media (max-width:640px){
+  .top{padding:14px 16px}
+  .link span{display:none}
+  .wrap{padding:0 16px 40px}
+  .hero{padding:26px 0 16px}
+  .paste{grid-template-columns:auto 1fr;grid-template-areas:"paste input" "go go"}
+  .paste__btn{grid-area:paste}
+  .paste input{grid-area:input}
+  .paste .btn{grid-area:go}
+  .preview{grid-template-columns:1fr;gap:18px;padding:16px}
+  .preview__media{width:140px}
+  .job{grid-template-columns:44px 1fr;gap:10px}
+  .job__thumb{width:44px;height:44px}
+  .job__actions{grid-column:1/-1;justify-content:flex-end}
+}
+@media (prefers-reduced-motion:reduce){
+  .stamp--in,.preview{animation:none}
+  .bar i{transition:none}
+}
+</style>
+</head>
+<body>
+<svg class="defs" aria-hidden="true">
+  <filter id="ink" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<header class="top">
+  <div class="brand"><span class="brand__mark" aria-hidden="true"></span>Tải video không logo</div>
+  <div class="top__right">
+    <button class="link" id="btnFolder" title="Mở thư mục lưu video">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+      <span id="folderName">Downloads\TaiVideo</span>
+    </button>
+    <button class="iconbtn" id="btnSettings" aria-label="Cài đặt" title="Cài đặt">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="updateBar" class="update" hidden>
+    <span>Có bản mới <b id="updVer"></b><span id="updNotes"></span></span>
+    <span class="update__actions">
+      <a id="updLink" class="btn btn--primary btn--sm" target="_blank" rel="noopener">Mở trang tải</a>
+      <button type="button" class="link" id="updLater">Để sau</button>
+    </span>
+  </div>
+  <section class="hero">
+    <h1>Dán link,<br>nhận video <em>không logo</em>.</h1>
+    <p class="lede">TikTok, Douyin, YouTube, Facebook, Instagram, X, Threads, Reddit và hơn 1.000 trang khác. Tải bản gốc từ máy chủ, giữ nguyên chất lượng.</p>
+    <form id="form" class="paste" autocomplete="off">
+      <button type="button" class="paste__btn" id="btnPaste" title="Dán link từ bộ nhớ tạm">Dán</button>
+      <input id="url" type="text" placeholder="Dán link video vào đây" spellcheck="false" autofocus aria-label="Link video">
+      <button type="submit" class="btn btn--primary" id="btnPreview">Xem trước</button>
+    </form>
+    <p id="msg" class="msg" role="alert" hidden></p>
+    <p id="ffmpegWarn" class="warn" hidden>Chưa tìm thấy ffmpeg trên máy: video YouTube chỉ tải được tối đa 720p và không xuất được MP3. <a href="https://www.gyan.dev/ffmpeg/builds/" target="_blank" rel="noopener">Cài ffmpeg</a> rồi mở lại app.</p>
+  </section>
+
+  <section id="preview" class="card preview" hidden aria-live="polite">
+    <div class="preview__media">
+      <img id="pvThumb" alt="">
+      <span id="pvCount" class="preview__count" hidden></span>
+      <div id="pvStamp" class="stamp" hidden>Không logo</div>
+    </div>
+    <div class="preview__body">
+      <h2 class="preview__title" id="pvTitle"></h2>
+      <p class="meta"><span class="site" id="pvSite"></span><span id="pvUploader"></span><span class="mono" id="pvDuration"></span></p>
+      <ul class="list" id="pvEntries" hidden></ul>
+      <div class="presets" id="presets" role="radiogroup" aria-label="Chất lượng"></div>
+      <div class="preview__actions">
+        <button class="btn btn--primary btn--lg" id="btnDownload">Tải về</button>
+        <span class="note" id="pvNote"></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="jobs" class="jobs" hidden>
+    <div class="jobs__head">
+      <span class="eyebrow">Đang tải <span id="jobCount"></span></span>
+      <button class="link" id="btnClear">Dọn mục đã xong</button>
+    </div>
+    <ul class="joblist" id="jobList"></ul>
+  </section>
+</main>
+
+<footer class="foot">Dùng cho mục đích cá nhân. Video thuộc bản quyền của người đăng.</footer>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form method="dialog" class="dlg" id="settingsForm">
+    <h2 id="dlgTitle">Cài đặt</h2>
+
+    <div class="field">
+      <label for="sDir">Thư mục lưu video</label>
+      <div class="row">
+        <input type="text" id="sDir" spellcheck="false">
+        <button type="button" class="btn btn--ghost" id="btnPick">Chọn…</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="lbl">Cookies đăng nhập (tuỳ chọn)</span>
+      <span class="hint">Chỉ cần khi video yêu cầu đăng nhập: Instagram, Facebook riêng tư, YouTube giới hạn tuổi hoặc bị hỏi "xác minh không phải bot".</span>
+      <div class="radios">
+        <label><input type="radio" name="ck" value="none"><span>Không dùng cookies</span></label>
+        <label><input type="radio" name="ck" value="browser">
+          <span class="sub"><span>Lấy từ trình duyệt đã đăng nhập</span>
+            <select id="sBrowser">
+              <option value="firefox">Firefox</option>
+              <option value="chrome">Chrome</option>
+              <option value="edge">Edge</option>
+              <option value="brave">Brave</option>
+              <option value="opera">Opera</option>
+              <option value="vivaldi">Vivaldi</option>
+            </select>
+            <span class="hint">Chrome và Edge bản mới mã hoá cookies chặt hơn, nếu báo lỗi hãy dùng Firefox hoặc file cookies.txt. Đóng trình duyệt trước khi tải.</span>
+          </span></label>
+        <label><input type="radio" name="ck" value="file">
+          <span class="sub"><span>Dùng file cookies.txt</span>
+            <input type="text" id="sCookieFile" placeholder="C:\...\cookies.txt" spellcheck="false">
+            <span class="hint">Xuất bằng tiện ích "Get cookies.txt LOCALLY" trên Chrome hoặc "cookies.txt" trên Firefox.</span>
+          </span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="row" style="gap:10px;align-items:flex-start;font-weight:400">
+        <input type="checkbox" id="sConvert" style="margin-top:4px;accent-color:var(--teal)">
+        <span><b>Tự chuyển video H.265 sang H.264 sau khi tải</b><br>
+          <span class="hint">Douyin và TikTok hay phát H.265, Windows mặc định không có bộ giải mã nên mở chỉ nghe tiếng. Chuyển mã tốn thêm vài chục giây mỗi video.</span></span>
+      </label>
+    </div>
+
+    <div class="dlg__foot">
+      <span class="ver">v<span id="sAppVer">…</span> · yt-dlp <span id="sVer">…</span>
+        · <button type="button" class="link" id="btnUpdate" style="padding:2px 6px;font-size:13px">Cập nhật yt-dlp</button>
+        <button type="button" class="link" id="btnCheckUpd" style="padding:2px 6px;font-size:13px">Kiểm tra cập nhật</button></span>
+      <div class="right">
+        <button type="button" class="btn btn--ghost" id="btnCancelDlg">Đóng</button>
+        <button type="submit" class="btn btn--primary" id="btnSave">Lưu cài đặt</button>
+      </div>
+    </div>
+    <p class="hint" id="sMsg" hidden></p>
+  </form>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const PRESET_ORDER = ['best', '1080', '720', '480', 'audio'];
+const ACTIVE = new Set(['queued', 'downloading', 'processing']);
+const STATUS_TEXT = {queued: 'Đang chờ', downloading: 'Đang tải', processing: 'Đang xử lý', done: 'Xong', error: 'Lỗi', cancelled: 'Đã huỷ'};
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {headers: {'Content-Type': 'application/json'}, ...opts});
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Lỗi không rõ');
+  return data;
+}
+const post = (path, body) => api(path, {method: 'POST', body: JSON.stringify(body || {})});
+
+const vi = n => n.toLocaleString('vi-VN', {maximumFractionDigits: 1});
+function fmtBytes(n) {
+  if (!n) return '';
+  const u = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return `${i ? vi(n) : Math.round(n)} ${u[i]}`;
+}
+function fmtEta(s) {
+  if (s == null) return '';
+  s = Math.round(s);
+  if (s < 60) return `còn ${s} giây`;
+  const m = Math.floor(s / 60), r = s % 60;
+  if (m < 60) return `còn ${m} phút${r ? ' ' + r + ' giây' : ''}`;
+  return `còn ${Math.floor(m / 60)} giờ ${m % 60} phút`;
+}
+function fmtDur(s) {
+  if (s == null) return '';
+  s = Math.round(s);
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+  return (h ? `${h}:${String(m).padStart(2, '0')}` : `${m}`) + ':' + String(r).padStart(2, '0');
+}
+const thumbUrl = u => u ? '/api/thumb?u=' + encodeURIComponent(u) : '';
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+// Ảnh không tải được thì để nền trống, không hiện chữ alt.
+document.addEventListener('error', e => {
+  const t = e.target;
+  if (t && t.tagName === 'IMG' && t.src !== BLANK) { t.src = BLANK; t.alt = ''; }
+}, true);
+function showMsg(text, info = false) {
+  const el = $('#msg');
+  el.hidden = !text;
+  el.textContent = text || '';
+  el.classList.toggle('msg--info', info);
+}
+
+/* ---------- xem trước ---------- */
+let current = null, selectedPreset = 'best';
+const urlInput = $('#url');
+
+async function preview() {
+  const raw = urlInput.value.trim();
+  if (!raw) { urlInput.focus(); return; }
+  const btn = $('#btnPreview');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Đang đọc…';
+  showMsg('');
+  $('#preview').hidden = true;
+  try {
+    renderPreview(await post('/api/preview', {url: raw}));
+  } catch (e) {
+    showMsg(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Xem trước';
+  }
+}
+
+function renderPreview(p) {
+  current = p;
+  const sec = $('#preview');
+  sec.hidden = false;
+  sec.style.animation = 'none'; sec.offsetHeight; sec.style.animation = '';
+  const img = $('#pvThumb');
+  img.classList.toggle('is-list', p.kind === 'playlist');
+  img.src = thumbUrl(p.thumbnail);
+  img.alt = p.title;
+  $('#pvTitle').textContent = p.title;
+  $('#pvSite').textContent = p.site;
+  $('#pvUploader').textContent = p.uploader || '';
+  $('#pvUploader').hidden = !p.uploader;
+  const dur = p.kind === 'playlist' ? `${p.count} video` : fmtDur(p.duration);
+  $('#pvDuration').textContent = dur;
+  $('#pvDuration').hidden = !dur;
+  const cnt = $('#pvCount');
+  cnt.hidden = p.kind !== 'playlist';
+  cnt.textContent = p.kind === 'playlist' ? `${p.count} VIDEO` : '';
+  const ul = $('#pvEntries');
+  ul.hidden = p.kind !== 'playlist' || !(p.entries || []).length;
+  ul.innerHTML = (p.entries || []).map(e => `<li>• ${esc(e.title || '')}${e.duration ? ' <span class="mono">' + fmtDur(e.duration) + '</span>' : ''}</li>`).join('')
+    + (p.count > (p.entries || []).length ? `<li>… và ${p.count - p.entries.length} video nữa</li>` : '');
+
+  const box = $('#presets');
+  box.innerHTML = '';
+  selectedPreset = PRESET_ORDER.find(k => p.presets[k] && p.presets[k].available) || 'best';
+  for (const k of PRESET_ORDER) {
+    const pr = p.presets[k];
+    if (!pr) continue;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'preset';
+    b.setAttribute('role', 'radio');
+    b.dataset.key = k;
+    b.innerHTML = `<b>${esc(pr.label)}</b><small>${esc(pr.detail || '')}</small>`;
+    if (!pr.available) b.disabled = true;
+    b.setAttribute('aria-checked', String(k === selectedPreset));
+    b.addEventListener('click', () => selectPreset(k));
+    box.appendChild(b);
+  }
+  $('#btnDownload').textContent = p.kind === 'playlist' ? `Tải cả danh sách (${p.count} video)` : 'Tải về';
+  updateStamp();
+}
+
+function selectPreset(k) {
+  selectedPreset = k;
+  for (const b of $('#presets').children) b.setAttribute('aria-checked', String(b.dataset.key === k));
+  updateStamp();
+}
+
+function updateStamp() {
+  const stamp = $('#pvStamp'), note = $('#pvNote');
+  const pr = current.presets[selectedPreset] || {};
+  let state = current.watermark;
+  if (state !== 'unknown' && selectedPreset !== 'audio' && pr.watermarked != null) state = pr.watermarked ? 'watermarked' : 'clean';
+  if (selectedPreset === 'audio') state = current.watermark === 'unknown' ? 'unknown' : 'audio';
+  stamp.classList.remove('stamp--in', 'stamp--wm');
+  if (state === 'clean' || state === 'watermarked') {
+    stamp.hidden = false;
+    stamp.textContent = state === 'clean' ? 'Không logo' : 'Có logo';
+    stamp.classList.toggle('stamp--wm', state === 'watermarked');
+    stamp.offsetHeight;
+    stamp.classList.add('stamp--in');
+  } else {
+    stamp.hidden = true;
+  }
+  let text = {
+    clean: 'Bản gốc từ máy chủ của trang, không chèn logo.',
+    watermarked: 'Trang chỉ cung cấp bản có logo cho video này.',
+    audio: 'Tách âm thanh và lưu thành MP3.',
+    unknown: current.kind === 'playlist' ? 'Mỗi video sẽ lấy bản không logo nếu trang có.' : 'Tải bản gốc từ trang. Nếu trang đã chèn sẵn logo vào video thì app không gỡ được.',
+  }[state];
+  if (pr.hevc && selectedPreset !== 'audio') {
+    text += current.convert_hevc
+      ? ' Bản này mã hoá H.265, app sẽ tự chuyển sang H.264 sau khi tải để mở được trên mọi máy.'
+      : ' Bản này mã hoá H.265, máy chưa có bộ giải mã sẽ chỉ nghe tiếng. Bật chuyển mã trong Cài đặt.';
+  }
+  note.textContent = text;
+}
+
+async function download() {
+  if (!current) return;
+  const btn = $('#btnDownload');
+  btn.disabled = true;
+  try {
+    await post('/api/download', {url: current.url, preset: selectedPreset, title: current.title, thumbnail: current.thumbnail, kind: current.kind});
+    $('#preview').hidden = true;
+    current = null;
+    urlInput.value = '';
+    urlInput.focus();
+    showMsg('Đã thêm vào danh sách tải bên dưới.', true);
+    setTimeout(() => { if ($('#msg').classList.contains('msg--info')) showMsg(''); }, 4000);
+    poll();
+  } catch (e) {
+    showMsg(e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ---------- danh sách tải ---------- */
+let pollTimer = null, openLogs = new Set();
+const rows = new Map();
+
+async function poll() {
+  clearTimeout(pollTimer);
+  let jobs = [];
+  try { jobs = await api('/api/jobs'); } catch { /* server đang bận */ }
+  renderJobs(jobs);
+  const active = jobs.some(j => ACTIVE.has(j.status));
+  pollTimer = setTimeout(poll, active ? 700 : 4000);
+}
+
+function renderJobs(jobs) {
+  const sec = $('#jobs'), list = $('#jobList');
+  sec.hidden = jobs.length === 0;
+  const active = jobs.filter(j => ACTIVE.has(j.status)).length;
+  $('#jobCount').textContent = active ? `· ${active} đang chạy` : '';
+  $('#btnClear').hidden = !jobs.some(j => !ACTIVE.has(j.status));
+  const seen = new Set();
+  jobs.forEach((j, idx) => {
+    seen.add(j.id);
+    let li = rows.get(j.id);
+    if (!li) {
+      li = document.createElement('li');
+      li.className = 'card job';
+      li.dataset.id = j.id;
+      li.innerHTML = `<img class="job__thumb" alt="">
+        <div class="job__main">
+          <div class="job__title"></div>
+          <div class="job__status"><span class="pill"></span><span class="job__detail mono"></span><span class="job__error"></span></div>
+          <div class="bar"><i></i></div>
+        </div>
+        <div class="job__actions">
+          <button class="btn btn--ghost btn--sm act-open">Mở thư mục</button>
+          <button class="btn btn--ghost btn--sm act-log">Chi tiết</button>
+          <button class="btn btn--ghost btn--sm act-cancel">Huỷ</button>
+          <button class="iconbtn act-remove" aria-label="Xoá khỏi danh sách" title="Xoá khỏi danh sách">×</button>
+        </div>
+        <pre class="job__log" hidden></pre>`;
+      li.querySelector('.job__thumb').src = thumbUrl(j.thumbnail);
+      li.querySelector('.act-open').addEventListener('click', () => post('/api/open', {job_id: j.id}).catch(e => showMsg(e.message)));
+      li.querySelector('.act-cancel').addEventListener('click', () => post(`/api/jobs/${j.id}/cancel`).then(poll));
+      li.querySelector('.act-remove').addEventListener('click', () => api(`/api/jobs/${j.id}`, {method: 'DELETE'}).then(poll));
+      li.querySelector('.act-log').addEventListener('click', () => { openLogs.has(j.id) ? openLogs.delete(j.id) : openLogs.add(j.id); poll(); });
+      rows.set(j.id, li);
+    }
+    if (list.children[idx] !== li) list.insertBefore(li, list.children[idx] || null);
+    li.className = `card job job--${j.status}`;
+    const title = j.title || j.url;
+    li.querySelector('.job__title').textContent = title;
+    li.querySelector('.job__title').title = j.filepath || j.url;
+    if (j.thumbnail && !li.querySelector('.job__thumb').src) li.querySelector('.job__thumb').src = thumbUrl(j.thumbnail);
+    li.querySelector('.pill').textContent = STATUS_TEXT[j.status] || j.status;
+    let detail = '';
+    if (j.status === 'downloading') {
+      detail = [j.total ? `${Math.round(j.progress)}%` : fmtBytes(j.downloaded), j.speed ? fmtBytes(j.speed) + '/s' : '', fmtEta(j.eta)].filter(Boolean).join(' · ');
+      if (j.n_items) detail = `mục ${j.item || 1}/${j.n_items} · ` + detail;
+    } else if (j.status === 'processing') {
+      detail = j.note
+        ? `${j.note}${j.progress < 100 ? ' · ' + Math.round(j.progress) + '%' : ''}`
+        : (j.preset === 'audio' ? 'đang chuyển sang MP3' : 'đang ghép hình và tiếng');
+    } else if (j.status === 'done') {
+      detail = j.files && j.files.length > 1 ? `${j.files.length} file` : (j.filepath ? j.filepath.split(/[\\/]/).pop() : '');
+    } else if (j.status === 'queued') {
+      detail = 'chờ đến lượt';
+    }
+    li.querySelector('.job__detail').textContent = detail;
+    li.querySelector('.job__error').textContent = j.status === 'error' ? (j.error || 'Lỗi không rõ') : '';
+    li.querySelector('.bar i').style.width = `${j.progress || 0}%`;
+    li.querySelector('.act-open').hidden = j.status !== 'done';
+    li.querySelector('.act-cancel').hidden = !ACTIVE.has(j.status);
+    li.querySelector('.act-remove').hidden = ACTIVE.has(j.status);
+    li.querySelector('.act-log').hidden = j.status !== 'error' || !(j.log && j.log.length);
+    const pre = li.querySelector('.job__log');
+    pre.hidden = !openLogs.has(j.id);
+    pre.textContent = (j.log || []).join('\n');
+  });
+  for (const [id, li] of rows) if (!seen.has(id)) { li.remove(); rows.delete(id); }
+}
+
+/* ---------- cài đặt ---------- */
+const dlg = $('#dlg');
+async function openSettings() {
+  try {
+    const s = await api('/api/settings');
+    $('#sDir').value = s.download_dir;
+    $('#sBrowser').value = s.cookies_browser || 'firefox';
+    $('#sCookieFile').value = s.cookies_file || '';
+    $('#sConvert').checked = s.convert_hevc !== false;
+    document.querySelector(`input[name=ck][value="${s.cookies_mode || 'none'}"]`).checked = true;
+    $('#sVer').textContent = s.yt_dlp;
+    $('#sAppVer').textContent = appInfo.version || '';
+    $('#btnUpdate').hidden = !!appInfo.frozen;
+    $('#sMsg').hidden = true;
+    dlg.showModal();
+  } catch (e) { showMsg(e.message); }
+}
+$('#btnSettings').addEventListener('click', openSettings);
+$('#btnCancelDlg').addEventListener('click', () => dlg.close());
+$('#btnPick').addEventListener('click', async () => {
+  $('#btnPick').disabled = true;
+  try { const r = await post('/api/settings/pick-folder'); if (r.path) $('#sDir').value = r.path; }
+  finally { $('#btnPick').disabled = false; }
+});
+$('#settingsForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = {
+    download_dir: $('#sDir').value.trim(),
+    cookies_mode: document.querySelector('input[name=ck]:checked').value,
+    cookies_browser: $('#sBrowser').value,
+    cookies_file: $('#sCookieFile').value.trim(),
+    convert_hevc: $('#sConvert').checked,
+  };
+  try {
+    const s = await post('/api/settings', body);
+    setFolderName(s.download_dir);
+    dlg.close();
+  } catch (err) {
+    const m = $('#sMsg'); m.hidden = false; m.textContent = err.message; m.style.color = 'var(--stamp)';
+  }
+});
+let appInfo = {};
+async function checkUpdate(force = false, showResult = false) {
+  const m = $('#sMsg');
+  try {
+    const u = await api('/api/update/check' + (force ? '?force=true' : ''));
+    const bar = $('#updateBar');
+    if (u.available) {
+      $('#updVer').textContent = u.latest;
+      $('#updNotes').textContent = u.notes ? ' · ' + u.notes : '';
+      $('#updLink').href = u.page_url || u.zip_url || '#';
+      bar.hidden = sessionStorage.getItem('updLater') === u.latest;
+    } else bar.hidden = true;
+    if (showResult) {
+      m.hidden = false; m.style.color = '';
+      m.textContent = u.available ? `Có bản ${u.latest}. Bấm "Mở trang tải" ở đầu trang để tải về.`
+        : (u.checked ? `Bạn đang dùng bản mới nhất (${u.current}).` : 'Không kiểm tra được: chưa có mạng hoặc chưa có bản phát hành nào.');
+    }
+  } catch (e) {
+    if (showResult) { m.hidden = false; m.textContent = e.message; m.style.color = 'var(--stamp)'; }
+  }
+}
+$('#updLater').addEventListener('click', () => { sessionStorage.setItem('updLater', $('#updVer').textContent); $('#updateBar').hidden = true; });
+$('#btnCheckUpd').addEventListener('click', () => checkUpdate(true, true));
+$('#btnUpdate').addEventListener('click', async () => {
+  const b = $('#btnUpdate'), m = $('#sMsg');
+  b.disabled = true; b.textContent = 'Đang cập nhật…';
+  m.hidden = false; m.style.color = ''; m.textContent = 'Đang tải bản yt-dlp mới, có thể mất một phút.';
+  try {
+    const r = await post('/api/update');
+    m.textContent = r.restart_needed
+      ? `Đã cập nhật ${r.old} → ${r.new}. Tắt và mở lại app để dùng bản mới.`
+      : (r.ok ? `Bạn đang dùng bản mới nhất (${r.new}).` : 'Không cập nhật được. Kiểm tra mạng rồi thử lại.');
+  } catch (err) { m.textContent = err.message; m.style.color = 'var(--stamp)'; }
+  finally { b.disabled = false; b.textContent = 'Cập nhật yt-dlp'; }
+});
+
+/* ---------- chung ---------- */
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c])); }
+function setFolderName(p) {
+  const parts = p.split(/[\\/]/).filter(Boolean);
+  $('#folderName').textContent = parts.slice(-2).join('\\');
+  $('#btnFolder').title = 'Mở ' + p;
+}
+$('#form').addEventListener('submit', e => { e.preventDefault(); preview(); });
+$('#btnDownload').addEventListener('click', download);
+$('#btnFolder').addEventListener('click', () => post('/api/open', {}).catch(e => showMsg(e.message)));
+$('#btnClear').addEventListener('click', () => post('/api/jobs/clear').then(() => { openLogs.clear(); poll(); }));
+$('#btnPaste').addEventListener('click', async () => {
+  try {
+    const t = (await navigator.clipboard.readText() || '').trim();
+    if (t) { urlInput.value = t; preview(); return; }
+    showMsg('Bộ nhớ tạm đang trống. Sao chép link video rồi thử lại.', true);
+  } catch {
+    showMsg('Trình duyệt không cho đọc bộ nhớ tạm. Nhấn Ctrl+V vào ô bên trên.', true);
+  }
+  urlInput.focus();
+});
+urlInput.addEventListener('paste', () => setTimeout(preview, 0));
+document.addEventListener('paste', e => {
+  if (dlg.open || document.activeElement === urlInput) return;
+  const t = (e.clipboardData || window.clipboardData).getData('text');
+  if (/https?:\/\//i.test(t)) { urlInput.value = t.trim(); preview(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== urlInput && !dlg.open) { e.preventDefault(); urlInput.focus(); }
+});
+
+(async () => {
+  try {
+    const h = await api('/api/health');
+    appInfo = h;
+    setFolderName(h.download_dir);
+    $('#ffmpegWarn').hidden = !!h.ffmpeg;
+    checkUpdate();
+  } catch { showMsg('Không kết nối được với app. Mở lại app rồi tải lại trang.'); }
+  poll();
+})();
+</script>
+</body>
+</html>
