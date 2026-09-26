@@ -2,7 +2,11 @@
 
 App chạy trên máy (Windows/macOS/Linux) để dán link TikTok, Douyin, YouTube, Instagram, X,
 Threads, Reddit… và tải video gốc về máy, ưu tiên bản **không chèn logo**.
-Lõi là [yt-dlp](https://github.com/yt-dlp/yt-dlp) (hỗ trợ hơn 1.000 trang), giao diện web tiếng Việt mở trong trình duyệt.
+Lõi là [yt-dlp](https://github.com/yt-dlp/yt-dlp) (hỗ trợ hơn 1.000 trang), giao diện tiếng Việt.
+
+**Tải bản dùng ngay (Windows, không cần cài Python):**
+https://github.com/lebac-svg/tai-video-khong-logo/releases/latest → tải file `TaiVideo-<phiên bản>-win64.zip`,
+giải nén, nháy đúp `TaiVideo.exe`. Hướng dẫn chi tiết nằm trong `DOC-TOI.txt` của gói.
 
 ## Chạy
 
@@ -25,7 +29,10 @@ Video lưu vào `Downloads\TaiVideo` (đổi trong Cài đặt).
   gồm `TaiVideo.exe` (đã kèm Python, yt-dlp, giao diện) + `ffmpeg.exe` + `DOC-TOI.txt`. Máy khác chỉ cần giải nén và nháy đúp.
 - Bản .exe mở trong **cửa sổ ứng dụng riêng** (dùng Edge hoặc Chrome ở chế độ app, không thanh địa chỉ).
   Đóng cửa sổ là tắt app; nếu còn video đang tải thì app đợi tải xong rồi mới tắt. Bản chạy từ mã nguồn vẫn mở trình duyệt như cũ, thêm `--window` nếu muốn cửa sổ riêng.
-- Thư mục dữ liệu: `%LOCALAPPDATA%\TaiVideo` (nhật ký `app.log`, hồ sơ cửa sổ). Cài đặt nằm cạnh file exe (`settings.json`).
+- Thư mục dữ liệu: `%LOCALAPPDATA%\TaiVideo` gồm cài đặt `settings.json` (giữ nguyên khi thay bản mới),
+  nhật ký `app.log` (có ghi mọi lỗi tải) và hồ sơ cửa sổ. Bản 1.1.0–1.1.1 lưu cài đặt cạnh exe; bản mới tự đọc lại nếu thấy.
+- Mở bản mới trong khi bản cũ còn chạy: bản mới không dùng lại máy chủ của bản cũ, và nhờ bản cũ tắt nếu nó đang rảnh.
+- Chạy thử không đụng cài đặt thật: `tools\test_fixes.py` (không cần mạng) và `tools\test_exe.py` (chạy exe với thư mục dữ liệu tạm).
 
 ### Phát hành bản mới để máy khác được báo
 
@@ -74,6 +81,14 @@ Douyin và TikTok hay phát video mã hoá H.265 (HEVC). Windows mặc định k
 Windows Media Player, Phim & TV chỉ phát tiếng. App tự nhận ra và chuyển sang H.264 ngay sau khi tải
 (bật sẵn, tắt được trong Cài đặt). Ở phần xem trước, mức nào là H.265 sẽ có nhãn "H.265".
 Nếu muốn giữ nguyên H.265, tắt tuỳ chọn này và xem bằng VLC hoặc cài "HEVC Video Extensions" từ Microsoft Store.
+
+### Gặp lỗi khi tải
+
+- Bấm **Chi tiết** ở mục lỗi để xem nhật ký, hoặc mở `%LOCALAPPDATA%\TaiVideo\app.log`.
+- "Không tìm thấy ffmpeg" / "system cannot find the file specified": thiếu `ffmpeg.exe` cạnh `TaiVideo.exe`.
+  Giải nén lại đầy đủ gói zip. (Bản 1.1.0 từng mất file này do script đóng gói xoá nhầm; đã sửa ở 1.1.2.)
+- Mục "xong" nhưng có dòng cảnh báo màu cam: video đã tải về nhưng chưa chuyển được H.265 sang H.264. Bấm **Thử lại**.
+- "Kết nối bị ngắt giữa chừng": bấm **Thử lại**, app tải tiếp từ phần đã có.
 
 ## Hạn chế cần biết
 

@@ -148,6 +148,7 @@ h1 em{font-style:normal;color:var(--teal)}
 .job--done .pill{background:var(--teal);color:#fff}
 .job--error .pill{background:var(--stamp-soft);color:var(--stamp)}
 .job--error .job__error{color:var(--stamp)}
+.job__error.is-warn{color:var(--amber)}
 .bar{height:4px;border-radius:99px;background:var(--line-2);overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:var(--teal);border-radius:99px;transition:width .4s ease}
 .job--processing .bar i{min-width:12%;background:repeating-linear-gradient(90deg,var(--amber) 0 14px,var(--amber-soft) 14px 28px);background-size:28px 100%;animation:stripe .7s linear infinite}
@@ -320,6 +321,7 @@ input[type=text]:focus,select:focus{outline:none;border-color:var(--teal);box-sh
         · <button type="button" class="link" id="btnUpdate" style="padding:2px 6px;font-size:13px">Cập nhật yt-dlp</button>
         <button type="button" class="link" id="btnCheckUpd" style="padding:2px 6px;font-size:13px">Kiểm tra cập nhật</button></span>
       <div class="right">
+        <button type="button" class="btn btn--ghost" id="btnQuit" title="Tắt hẳn app">Thoát app</button>
         <button type="button" class="btn btn--ghost" id="btnCancelDlg">Đóng</button>
         <button type="submit" class="btn btn--primary" id="btnSave">Lưu cài đặt</button>
       </div>
@@ -536,6 +538,7 @@ function renderJobs(jobs) {
         </div>
         <div class="job__actions">
           <button class="btn btn--ghost btn--sm act-open">Mở thư mục</button>
+          <button class="btn btn--ghost btn--sm act-retry">Thử lại</button>
           <button class="btn btn--ghost btn--sm act-log">Chi tiết</button>
           <button class="btn btn--ghost btn--sm act-cancel">Huỷ</button>
           <button class="iconbtn act-remove" aria-label="Xoá khỏi danh sách" title="Xoá khỏi danh sách">×</button>
@@ -544,6 +547,7 @@ function renderJobs(jobs) {
       li.querySelector('.job__thumb').src = thumbUrl(j.thumbnail);
       li.querySelector('.act-open').addEventListener('click', () => post('/api/open', {job_id: j.id}).catch(e => showMsg(e.message)));
       li.querySelector('.act-cancel').addEventListener('click', () => post(`/api/jobs/${j.id}/cancel`).then(poll));
+      li.querySelector('.act-retry').addEventListener('click', () => post(`/api/jobs/${j.id}/retry`).then(poll).catch(e => showMsg(e.message)));
       li.querySelector('.act-remove').addEventListener('click', () => api(`/api/jobs/${j.id}`, {method: 'DELETE'}).then(poll));
       li.querySelector('.act-log').addEventListener('click', () => { openLogs.has(j.id) ? openLogs.delete(j.id) : openLogs.add(j.id); poll(); });
       rows.set(j.id, li);
@@ -569,12 +573,16 @@ function renderJobs(jobs) {
       detail = 'chờ đến lượt';
     }
     li.querySelector('.job__detail').textContent = detail;
-    li.querySelector('.job__error').textContent = j.status === 'error' ? (j.error || 'Lỗi không rõ') : '';
+    const warn = j.status === 'done' && j.warning;
+    const errEl = li.querySelector('.job__error');
+    errEl.textContent = j.status === 'error' ? (j.error || 'Lỗi không rõ') : (warn ? j.warning : '');
+    errEl.classList.toggle('is-warn', !!warn);
     li.querySelector('.bar i').style.width = `${j.progress || 0}%`;
     li.querySelector('.act-open').hidden = j.status !== 'done';
     li.querySelector('.act-cancel').hidden = !ACTIVE.has(j.status);
     li.querySelector('.act-remove').hidden = ACTIVE.has(j.status);
-    li.querySelector('.act-log').hidden = j.status !== 'error' || !(j.log && j.log.length);
+    li.querySelector('.act-log').hidden = !(j.status === 'error' || warn) || !(j.log && j.log.length);
+    li.querySelector('.act-retry').hidden = !(j.status === 'error' || j.status === 'cancelled' || warn);
     const pre = li.querySelector('.job__log');
     pre.hidden = !openLogs.has(j.id);
     pre.textContent = (j.log || []).join('\n');
@@ -601,6 +609,11 @@ async function openSettings() {
 }
 $('#btnSettings').addEventListener('click', openSettings);
 $('#btnCancelDlg').addEventListener('click', () => dlg.close());
+$('#btnQuit').addEventListener('click', async () => {
+  if (!confirm('Tắt app? Các video đang tải sẽ dừng.')) return;
+  try { await post('/api/quit'); } catch { /* máy chủ đã tắt */ }
+  document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif">Đã tắt app. Bạn có thể đóng cửa sổ này.</p>';
+});
 $('#btnPick').addEventListener('click', async () => {
   $('#btnPick').disabled = true;
   try { const r = await post('/api/settings/pick-folder'); if (r.path) $('#sDir').value = r.path; }

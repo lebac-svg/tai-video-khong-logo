@@ -32,16 +32,22 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.1.2"
 APP_NAME = "Tải video không logo"
 IS_WIN = platform.system() == "Windows"
 FROZEN = bool(getattr(sys, "frozen", False))  # đang chạy từ bản .exe đóng gói
-# Bản .exe: thư mục chứa exe giữ settings.json và ffmpeg; giao diện nằm trong gói giải nén tạm.
+# Bản .exe: thư mục chứa exe giữ ffmpeg.exe đi kèm; giao diện nằm trong gói giải nén tạm.
 APP_DIR = Path(sys.executable).resolve().parent if FROZEN else Path(__file__).resolve().parent
 BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", APP_DIR))
 STATIC_DIR = BUNDLE_DIR / "static"
-SETTINGS_FILE = APP_DIR / "settings.json"
-DATA_DIR = (Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "TaiVideo") if IS_WIN else (Path.home() / ".tai-video")
+# TAIVIDEO_DATA_DIR: chỉ định thư mục dữ liệu riêng (dùng khi chạy thử, để không đụng cài đặt thật).
+_DATA_OVERRIDE = os.environ.get("TAIVIDEO_DATA_DIR")
+DATA_DIR = Path(_DATA_OVERRIDE) if _DATA_OVERRIDE else (
+    (Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "TaiVideo") if IS_WIN else (Path.home() / ".tai-video"))
+# Bản .exe lưu cài đặt theo người dùng nên giữ nguyên khi thay bản mới; bản mã nguồn lưu cạnh app.py.
+SETTINGS_FILE = (DATA_DIR / "settings.json") if (FROZEN or _DATA_OVERRIDE) else (APP_DIR / "settings.json")
+# Bản .exe 1.1.0–1.1.1 lưu cài đặt cạnh exe: đọc lại nếu chưa có file ở chỗ mới.
+LEGACY_SETTINGS_FILES = [APP_DIR / "settings.json"] if (FROZEN and not _DATA_OVERRIDE) else []
 LOG_FILE = DATA_DIR / "app.log"
 DEFAULT_DOWNLOAD_DIR = Path.home() / "Downloads" / "TaiVideo"
 # Nơi app hỏi bản mới: file latest.json đính kèm bản phát hành mới nhất trên GitHub Releases.
@@ -62,44 +68,70 @@ class Settings(BaseModel):
 
 
 def load_settings() -> Settings:
-    try:
-        return Settings(**json.loads(SETTINGS_FILE.read_text("utf-8")))
-    except Exception:
-        return Settings()
+    for f in (SETTINGS_FILE, *LEGACY_SETTINGS_FILES):
+        try:
+            return Settings(**json.loads(f.read_text("utf-8")))
+        except Exception:  # noqa: BLE001
+            continue
+    return Settings()
 
 
 def save_settings(s: Settings) -> None:
+    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
     SETTINGS_FILE.write_text(json.dumps(s.model_dump(), ensure_ascii=False, indent=2), "utf-8")
 
 
 SETTINGS = load_settings()
 
 
-def find_ffmpeg() -> str | None:
-    """ffmpeg trên PATH, hoặc trong thư mục app (ffmpeg/bin/ffmpeg.exe)."""
-    exe = "ffmpeg.exe" if IS_WIN else "ffmpeg"
-    for cand in (shutil.which("ffmpeg"),
-                 APP_DIR / "ffmpeg" / "bin" / exe,
-                 APP_DIR / "ffmpeg" / exe,
-                 APP_DIR / exe):
-        if cand and Path(cand).exists():
-            return str(cand)
+def app_log(msg: str) -> None:
+    """Ghi một dòng vào nhật ký (bản .exe: %LOCALAPPDATA%\\TaiVideo\\app.log) để tra lỗi về sau."""
+    try:
+        print(f"[{time.strftime('%d/%m %H:%M:%S')}] {msg}", flush=True)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def find_tool(name: str) -> str | None:
+    """Tìm ffmpeg/ffprobe. Bản .exe ưu tiên file đi kèm cạnh TaiVideo.exe, rồi mới tới PATH.
+    Luôn trả đường dẫn tuyệt đối: đường dẫn tương đối như .\\ffmpeg.exe hỏng ngay khi thư mục làm việc đổi."""
+    exe = f"{name}.exe" if IS_WIN else name
+    bundled = [APP_DIR / exe, APP_DIR / "ffmpeg" / "bin" / exe, APP_DIR / "ffmpeg" / exe]
+    on_path = shutil.which(name)
+    for cand in ([*bundled, on_path] if FROZEN else [on_path, *bundled]):
+        if cand and Path(cand).is_file():
+            return str(Path(cand).resolve())
     return None
 
 
-FFMPEG = find_ffmpeg()
+def find_ffmpeg() -> str | None:
+    return find_tool("ffmpeg")
 
 
 def find_ffprobe() -> str | None:
     exe = "ffprobe.exe" if IS_WIN else "ffprobe"
-    if FFMPEG and Path(FFMPEG).with_name(exe).exists():
+    if FFMPEG and Path(FFMPEG).with_name(exe).is_file():  # ưu tiên ffprobe cùng bộ với ffmpeg đang dùng
         return str(Path(FFMPEG).with_name(exe))
-    return shutil.which("ffprobe")
+    return find_tool("ffprobe")
 
 
+FFMPEG = find_ffmpeg()
 FFPROBE = find_ffprobe()
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 HEVC_NAMES = ("hevc", "h265", "hvc1", "hev1")
+
+
+def ensure_ffmpeg() -> str | None:
+    """Kiểm tra lại ffmpeg ngay trước mỗi lần dùng: file có thể đã bị xoá hoặc di chuyển trong lúc app mở."""
+    global FFMPEG, FFPROBE
+    if not (FFMPEG and Path(FFMPEG).is_file()):
+        old = FFMPEG
+        FFMPEG = find_ffmpeg()
+        FFPROBE = find_ffprobe()
+        app_log(f"ffmpeg {old} không còn, chuyển sang: {FFMPEG or 'KHÔNG CÓ'}")
+    elif FFPROBE and not Path(FFPROBE).is_file():
+        FFPROBE = find_ffprobe()
+    return FFMPEG
 
 
 def probe_video(path: str) -> dict:
@@ -130,41 +162,69 @@ def is_hevc(vcodec: str | None) -> bool:
     return (vcodec or "").lower().startswith(HEVC_NAMES)
 
 
-def convert_to_h264(path: str, on_progress=None, should_cancel=None) -> str:
-    """Chuyển video H.265 sang H.264 (giữ nguyên tiếng), thay file gốc. Trả về đường dẫn mới."""
-    src = Path(path)
-    tmp = src.with_name(src.stem + ".h264.tmp.mp4")
-    duration = probe_video(path).get("duration") or 0
-    audio = ["-c:a", "copy"] if src.suffix.lower() in (".mp4", ".mov", ".m4v") else ["-c:a", "aac", "-b:a", "192k"]
-    cmd = [FFMPEG, "-y", "-v", "error", "-nostdin", "-i", str(src),
-           "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
-           *audio, "-movflags", "+faststart", "-progress", "pipe:1", str(tmp)]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+class ConversionError(RuntimeError):
+    """Chuyển mã thất bại; file gốc vẫn được giữ nguyên."""
+
+
+def run_ffmpeg_progress(cmd: list, duration: float, on_progress=None, should_cancel=None) -> tuple[int, str]:
+    """Chạy ffmpeg và đọc tiến độ từ '-progress pipe:1'. stderr gộp vào stdout nên ống dẫn không bao giờ bị đầy
+    (tránh treo khi ffmpeg in nhiều cảnh báo). Trả về (mã thoát, các dòng lỗi cuối)."""
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                             text=True, encoding="utf-8", errors="replace", creationflags=NO_WINDOW)
+    errors: list[str] = []
     try:
-        for line in proc.stdout:
+        for raw in proc.stdout:
             if should_cancel and should_cancel():
                 proc.kill()
                 raise yt_dlp.utils.DownloadCancelled("Đã huỷ")
+            line = raw.strip()
             if line.startswith("out_time_us=") and duration and on_progress:
                 try:
                     on_progress(min(100.0, int(line.split("=", 1)[1]) / 1_000_000 / duration * 100))
                 except ValueError:
                     pass
+            elif line and "=" not in line.split(" ", 1)[0]:  # dòng tiến độ có dạng khoá=giá trị
+                errors.append(line)
+                del errors[:-6]
         proc.wait()
-        err = (proc.stderr.read() if proc.stderr else "")[-300:]
     except BaseException:
         if proc.poll() is None:
             proc.kill()
-        tmp.unlink(missing_ok=True)
         raise
-    if proc.returncode != 0 or not tmp.exists():
+    return proc.returncode, " | ".join(errors)
+
+
+def convert_to_h264(path: str, on_progress=None, should_cancel=None) -> str:
+    """Chuyển video H.265 sang H.264 (giữ nguyên tiếng), thay file gốc. Trả về đường dẫn mới.
+    Thất bại thì file gốc còn nguyên và báo ConversionError."""
+    ffmpeg = ensure_ffmpeg()
+    if not ffmpeg:
+        raise ConversionError("không tìm thấy ffmpeg")
+    src = Path(path)
+    tmp = src.with_name(src.stem + ".h264.tmp.mp4")
+    duration = probe_video(path).get("duration") or 0
+    video = ["-map", "0:v:0", "-map", "0:a:0?",
+             "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",  # libx264 với yuv420p cần kích thước chẵn
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p"]
+    audio_choices = [["-c:a", "aac", "-b:a", "192k"]]
+    if src.suffix.lower() in (".mp4", ".mov", ".m4v"):
+        audio_choices.insert(0, ["-c:a", "copy"])  # giữ nguyên tiếng; không được thì mã hoá lại AAC
+    last_error = ""
+    for audio in audio_choices:
+        cmd = [ffmpeg, "-y", "-v", "error", "-nostdin", "-i", str(src), *video, *audio,
+               "-movflags", "+faststart", "-progress", "pipe:1", str(tmp)]
+        try:
+            code, last_error = run_ffmpeg_progress(cmd, duration, on_progress, should_cancel)
+        except BaseException:
+            tmp.unlink(missing_ok=True)
+            raise
+        if code == 0 and tmp.is_file() and tmp.stat().st_size > 0:
+            dst = src.with_suffix(".mp4")
+            src.unlink()
+            tmp.replace(dst)
+            return str(dst)
         tmp.unlink(missing_ok=True)
-        raise RuntimeError(f"ffmpeg không chuyển mã được: {err.strip() or 'lỗi không rõ'}")
-    dst = src.with_suffix(".mp4")
-    src.unlink()
-    tmp.replace(dst)
-    return str(dst)
+    raise ConversionError(last_error or "ffmpeg báo lỗi không rõ")
 
 
 # ------------------------------------------------------- chọn định dạng --
@@ -253,14 +313,15 @@ class QuietLogger:
 
 def base_opts(sink=None) -> dict:
     s = SETTINGS
+    ensure_ffmpeg()
     opts = {
         "quiet": True,
         "noprogress": True,
         "logger": QuietLogger(sink),
         "noplaylist": True,
         "windowsfilenames": True,
-        "retries": 3,
-        "fragment_retries": 3,
+        "retries": 10,            # mạng chập chờn: thử lại và tải tiếp từ chỗ dở
+        "fragment_retries": 10,
         "concurrent_fragment_downloads": 4,
         "socket_timeout": 20,
         "format_sort": FORMAT_SORT,
@@ -414,6 +475,10 @@ def choose(ydl: yt_dlp.YoutubeDL, info: dict, spec: str, fields: list[str] | Non
     return chosen[0] if chosen else None
 
 
+MSG_NO_FFMPEG = ("Không tìm thấy ffmpeg (cần để ghép hình với tiếng). Với bản .exe: giữ ffmpeg.exe cùng thư mục "
+                 "với TaiVideo.exe (giải nén lại đầy đủ gói app) rồi mở lại app.")
+MSG_NETWORK = "Kết nối bị ngắt giữa chừng. Bấm Thử lại: app tải tiếp từ chỗ đang dở."
+
 ERROR_RULES = [
     ("fresh cookies", "Douyin chỉ phát cho trình duyệt thật: mở douyin.com trong Firefox một lần (không cần đăng nhập), "
                       "rồi vào Cài đặt → Cookies → \"Lấy từ trình duyệt: Firefox\" và thử lại."),
@@ -437,8 +502,19 @@ ERROR_RULES = [
     ("http error 404", "Video không tồn tại hoặc đã bị xoá."),
     ("http error 403", "Máy chủ từ chối truy cập (403). Thử lại sau hoặc cập nhật yt-dlp trong Cài đặt."),
     ("http error 429", "Trang tạm chặn vì tải quá nhiều (429). Đợi vài phút rồi thử lại."),
-    ("ffmpeg", "Thiếu ffmpeg. Cài ffmpeg rồi mở lại app."),
-    ("timed out", "Kết nối quá chậm hoặc bị gián đoạn. Thử lại."),
+    ("ffmpeg is not installed", MSG_NO_FFMPEG),
+    ("ffmpeg not found", MSG_NO_FFMPEG),
+    ("không tìm thấy ffmpeg", MSG_NO_FFMPEG),
+    ("cannot find the file specified", "Thiếu file cần thiết của app (thường là ffmpeg.exe). "
+                                       "Giải nén lại đầy đủ gói app rồi mở lại."),
+    ("was not closed cleanly", MSG_NETWORK),
+    ("connection reset", MSG_NETWORK),
+    ("connection aborted", MSG_NETWORK),
+    ("connection broken", MSG_NETWORK),
+    ("remote end closed", MSG_NETWORK),
+    ("incompleteread", MSG_NETWORK),
+    ("did not get any data blocks", MSG_NETWORK),
+    ("timed out", "Kết nối quá chậm hoặc bị gián đoạn. Bấm Thử lại."),
     ("unable to download webpage", "Không kết nối được tới trang. Kiểm tra mạng rồi thử lại."),
     ("unable to extract", "Trang đã đổi cấu trúc. Cập nhật yt-dlp trong Cài đặt rồi thử lại."),
     ("requested format is not available", "Không có định dạng phù hợp."),
@@ -473,6 +549,7 @@ class Job:
         self.files: list[str] = []
         self.error = None
         self.note = None
+        self.warning = None      # tải xong nhưng có việc chưa làm được (vd. chưa chuyển được H.265)
         self.log: list[str] = []
         self.created = time.time()
         self.finished = None
@@ -487,12 +564,51 @@ class Job:
             "downloaded": self.downloaded, "total": self.total,
             "item": self.item, "n_items": self.n_items,
             "filepath": self.filepath, "files": self.files, "error": self.error, "note": self.note,
+            "warning": self.warning,
             "log": self.log[-12:], "created": self.created, "finished": self.finished,
         }
 
 
 JOBS: "OrderedDict[str, Job]" = OrderedDict()
 EXECUTOR = ThreadPoolExecutor(max_workers=2)
+MSG_HEVC_NOT_CONVERTED = ("Đã tải xong nhưng chưa chuyển được sang H.264, máy có thể chỉ phát tiếng. "
+                          "Bấm Thử lại, hoặc mở bằng VLC.")
+
+
+def convert_hevc_files(job: Job, log, check_cancel) -> None:
+    """Douyin/TikTok hay phát H.265, Windows không có sẵn bộ giải mã nên chỉ nghe tiếng: chuyển sang H.264.
+    Lỗi ở bước này không làm hỏng lượt tải: giữ file gốc và ghi cảnh báo."""
+    if not (SETTINGS.convert_hevc and job.preset != "audio" and job.files):
+        return
+    if not ensure_ffmpeg():
+        job.warning = MSG_HEVC_NOT_CONVERTED
+        log("✖ không có ffmpeg nên không kiểm tra/chuyển được H.265")
+        return
+    n = len(job.files)
+    result = []
+    for i, f in enumerate(list(job.files)):
+        if not os.path.exists(f) or not is_hevc(probe_video(f).get("vcodec")):
+            result.append(f)
+            continue
+        check_cancel()
+        job.status = "processing"
+        job.note = "chuyển H.265 → H.264 để mở được trên mọi máy"
+        job.progress = i / n * 100
+        log(f"[chuyển mã] {os.path.basename(f)}: H.265 → H.264")
+
+        def on_progress(p, i=i):
+            job.progress = (i + p / 100) / n * 100
+
+        try:
+            result.append(convert_to_h264(f, on_progress, lambda: job.cancel))
+        except ConversionError as e:
+            result.append(f)
+            job.warning = MSG_HEVC_NOT_CONVERTED
+            log(f"✖ chuyển mã lỗi: {e}")
+            app_log(f"chuyển mã lỗi: {f}: {e}")
+    job.files = result
+    job.filepath = result[-1] if result else job.filepath
+    job.note = None
 
 
 def run_job(job: Job) -> None:
@@ -553,7 +669,7 @@ def run_job(job: Job) -> None:
                 job.files.append(fp)
                 job.filepath = fp
 
-    can_merge = bool(FFMPEG)
+    can_merge = bool(ensure_ffmpeg())
     opts = {
         **base_opts(log),
         "format": preset_spec(job.preset, can_merge, prefers_combined(job.url)),
@@ -582,26 +698,7 @@ def run_job(job: Job) -> None:
                         job.files.append(rd["filepath"])
         if job.files:
             job.filepath = job.files[-1]
-        # Douyin/TikTok hay phát H.265; Windows không có sẵn bộ giải mã nên chỉ nghe tiếng.
-        if SETTINGS.convert_hevc and FFMPEG and job.preset != "audio" and job.files:
-            converted = []
-            for i, f in enumerate(list(job.files)):
-                if not os.path.exists(f) or not is_hevc(probe_video(f).get("vcodec")):
-                    converted.append(f)
-                    continue
-                check_cancel()
-                job.status = "processing"
-                job.note = "chuyển H.265 → H.264 để mở được trên mọi máy"
-                job.progress = i / len(job.files) * 100
-                log(f"[chuyển mã] {os.path.basename(f)}: H.265 → H.264")
-
-                def on_progress(p, i=i, n=len(job.files)):
-                    job.progress = (i + p / 100) / n * 100
-
-                converted.append(convert_to_h264(f, on_progress, lambda: job.cancel))
-            job.files = converted
-            job.filepath = converted[-1]
-            job.note = None
+        convert_hevc_files(job, log, check_cancel)
         job.status = "done"
         job.progress = 100.0
         if job.n_items:
@@ -619,10 +716,12 @@ def run_job(job: Job) -> None:
         job.status = "error"
         job.error = humanize_error(str(e))
         log(str(e))
+        app_log(f"LỖI {job.url}: {e}")
     except Exception as e:  # noqa: BLE001
         job.status = "error"
         job.error = humanize_error(str(e))
         log(f"{type(e).__name__}: {e}")
+        app_log(f"LỖI {job.url}: {type(e).__name__}: {e}")
     finally:
         job.speed = None
         job.eta = None
@@ -708,13 +807,20 @@ def api_update_check(force: bool = False):
     return update_status(force)
 
 
+@app.post("/api/quit")
+def api_quit():
+    """Nút Thoát trong Cài đặt: tắt app (dùng khi giao diện mở trong tab trình duyệt, không có cửa sổ riêng)."""
+    threading.Timer(0.5, lambda: os._exit(0)).start()
+    return {"ok": True}
+
+
 @app.post("/api/preview")
 def api_preview(body: UrlIn):
     url = extract_first_url(body.url)
     if not url:
         raise HTTPException(400, "Không tìm thấy link hợp lệ. Dán link bắt đầu bằng http hoặc https.")
     url = normalize_url(url)
-    can_merge = bool(FFMPEG)
+    can_merge = bool(ensure_ffmpeg())
     combined_first = prefers_combined(url)
     opts = {**base_opts(), "extract_flat": "in_playlist", "format": preset_spec("best", can_merge, combined_first)}
     try:
@@ -821,6 +927,21 @@ def api_cancel(job_id: str):
         if job.status == "queued":
             job.status = "cancelled"
             job.finished = time.time()
+    return job.public()
+
+
+@app.post("/api/jobs/{job_id}/retry")
+def api_retry(job_id: str):
+    """Tải lại mục lỗi/đã huỷ, cùng link và chất lượng. File .part còn lại sẽ được tải tiếp từ chỗ dở."""
+    old = JOBS.get(job_id)
+    if not old:
+        raise HTTPException(404, "Không thấy mục này.")
+    if old.status in ("queued", "downloading", "processing"):
+        return old.public()
+    job = Job(old.url, old.preset, old.title, old.thumbnail, old.kind)
+    JOBS.pop(job_id, None)
+    JOBS[job.id] = job
+    EXECUTOR.submit(run_job, job)
     return job.public()
 
 
@@ -960,16 +1081,34 @@ def free_port(start: int = 8765) -> int:
     return 0
 
 
-def find_running_instance(port: int = 0) -> str | None:
-    """App đã mở sẵn trên máy thì trả về địa chỉ của nó, để mở thêm cửa sổ thay vì chạy bản thứ hai."""
+def find_running_instance(port: int = 0) -> tuple[str | None, dict]:
+    """App đã mở sẵn trên máy thì trả về (địa chỉ, thông tin) của nó, để mở thêm cửa sổ thay vì chạy bản thứ hai."""
     for p in ([port] if port else range(8765, 8795)):
         try:
-            with urllib.request.urlopen(f"http://127.0.0.1:{p}/api/health", timeout=0.4) as r:
-                if json.load(r).get("app") == "tai-video":
-                    return f"http://127.0.0.1:{p}"
+            with urllib.request.urlopen(f"http://127.0.0.1:{p}/api/health", timeout=1.5) as r:
+                info = json.load(r)
+            if info.get("app") == "tai-video":
+                return f"http://127.0.0.1:{p}", info
         except Exception:  # noqa: BLE001
             continue
-    return None
+    return None, {}
+
+
+def retire_old_instance(base: str) -> None:
+    """Bản cũ hơn đang chạy: nhờ nó tắt nếu đang rảnh (bản ≥1.1.1 có /api/quit). Bản quá cũ thì để yên,
+    bản mới chạy máy chủ riêng ở cổng khác nên không bị bản cũ chen vào."""
+    try:
+        with urllib.request.urlopen(base + "/api/jobs", timeout=2) as r:
+            jobs = json.load(r)
+        if any(j.get("status") in ("queued", "downloading", "processing") for j in jobs):
+            return
+        req = urllib.request.Request(base + "/api/quit", data=b"{}", method="POST",
+                                     headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=2).close()
+        time.sleep(1.0)
+        app_log(f"đã nhờ bản cũ ở {base} tắt")
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def find_browser_app() -> str | None:
@@ -1006,6 +1145,7 @@ def launch_ui(url: str, window: bool, own_server: bool) -> None:
     """Mở giao diện. Ở chế độ cửa sổ riêng, đóng cửa sổ là tắt app (đợi các mục đang tải xong trước)."""
     if own_server:
         time.sleep(1.0)  # đợi máy chủ lên
+    print(f"[giao diện] cửa sổ riêng: {'có' if window else 'không'} · trình duyệt: {find_browser_app()}")
     proc = open_app_window(url) if window else None
     if proc is None:
         webbrowser.open(url)
@@ -1027,22 +1167,40 @@ def main() -> None:
     ap.add_argument("--no-browser", action="store_true", help="chỉ chạy máy chủ, không mở giao diện")
     ap.add_argument("--browser", action="store_true", help="mở bằng trình duyệt thường thay vì cửa sổ riêng")
     ap.add_argument("--window", action="store_true", help="mở cửa sổ ứng dụng riêng (mặc định với bản .exe)")
+    ap.add_argument("--diag", action="store_true", help="in thông tin chẩn đoán rồi thoát")
     a = ap.parse_args()
-    if FROZEN:  # bản .exe không có cửa sổ dòng lệnh: ghi log ra file
+    if a.diag:
+        info = {"version": APP_VERSION, "frozen": FROZEN, "app_dir": str(APP_DIR), "bundle_dir": str(BUNDLE_DIR),
+                "data_dir": str(DATA_DIR), "settings_file": str(SETTINGS_FILE), "ffmpeg": FFMPEG, "ffprobe": FFPROBE,
+                "browser_app": find_browser_app(), "python": platform.python_version()}
+        text = json.dumps(info, ensure_ascii=False, indent=2)
+        print(text)
         try:
             DATA_DIR.mkdir(parents=True, exist_ok=True)
+            (DATA_DIR / "diag.json").write_text(text, "utf-8")
+        except OSError:
+            pass
+        return
+    if FROZEN:  # bản .exe không có cửa sổ dòng lệnh: ghi log ra file (giữ tối đa ~2 MB)
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            if LOG_FILE.is_file() and LOG_FILE.stat().st_size > 2_000_000:
+                LOG_FILE.replace(LOG_FILE.with_suffix(".log.1"))
             sys.stdout = sys.stderr = open(LOG_FILE, "a", encoding="utf-8", buffering=1)
         except OSError:
             pass
     window = (a.window or FROZEN) and not a.browser
-    running = find_running_instance(a.port)
+    running, running_info = find_running_instance(a.port)
     if running and not a.no_browser:
-        launch_ui(running, window, own_server=False)
-        return
+        if running_info.get("version") == APP_VERSION:
+            launch_ui(running, window, own_server=False)
+            return
+        retire_old_instance(running)  # bản khác phiên bản: không dùng lại, chạy máy chủ của bản này
     port = a.port or free_port()
     url = f"http://127.0.0.1:{port}"
-    print(f"{APP_NAME} {APP_VERSION} đang chạy tại {url}   (Ctrl+C để thoát)")
-    print(f"yt-dlp {yt_dlp.version.__version__} · ffmpeg: {FFMPEG or 'KHÔNG THẤY (không ghép được video HD, không xuất MP3)'}")
+    app_log(f"{APP_NAME} {APP_VERSION} đang chạy tại {url}   (Ctrl+C để thoát)")
+    app_log(f"yt-dlp {yt_dlp.version.__version__} · ffmpeg: {FFMPEG or 'KHÔNG THẤY (không ghép được video HD, không xuất MP3)'}"
+            f" · cài đặt: {SETTINGS_FILE}")
     if not a.no_browser:
         threading.Thread(target=launch_ui, args=(url, window, True), daemon=True).start()
     import uvicorn

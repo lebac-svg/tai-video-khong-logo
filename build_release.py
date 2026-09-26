@@ -22,6 +22,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 from pathlib import Path
 
@@ -38,14 +39,16 @@ CÁCH DÙNG
 3. Cửa sổ app hiện ra, dán link video và bấm Tải về. Video lưu vào Downloads\\TaiVideo (đổi trong Cài đặt).
 
 CẬP NHẬT
-- Khi có bản mới, app hiện dòng "Có bản mới ..." ở đầu trang. Bấm "Mở trang tải", tải file zip mới,
-  giải nén đè lên thư mục cũ. Cài đặt của bạn được giữ nguyên.
+- Khi có bản mới, app hiện dòng "Có bản mới ..." ở đầu trang. Bấm "Mở trang tải", tải file zip mới.
+  Tắt app (Cài đặt → Thoát app) rồi giải nén đè lên thư mục cũ. Cài đặt nằm trong %LOCALAPPDATA%\\TaiVideo
+  nên được giữ nguyên.
 - Trang phát hành: https://github.com/{repo}/releases
 
 GHI CHÚ
 - Cần Edge hoặc Chrome trên máy để hiện cửa sổ app (Windows 10/11 có sẵn Edge).
 - YouTube đủ mức chất lượng nhất khi máy có Node.js hoặc Deno; không có vẫn tải được nhưng có thể thiếu vài mức.
 - Douyin và các trang cần đăng nhập: xem hướng dẫn cookies trong Cài đặt.
+- Gặp lỗi: bấm "Chi tiết" ở mục bị lỗi, hoặc gửi file %LOCALAPPDATA%\\TaiVideo\\app.log.
 - ffmpeg.exe kèm theo là bản dựng của gyan.dev (giấy phép GPL), mã nguồn tại https://ffmpeg.org
 - Nhật ký lỗi: %LOCALAPPDATA%\\TaiVideo\\app.log
 """
@@ -101,14 +104,17 @@ def main() -> None:
         sys.exit(f"Không thấy {exe}")
 
     rel = DIST / f"TaiVideo-{ver}"
-    shutil.rmtree(rel, ignore_errors=True)
-    if rel.exists():  # thư mục đang bị giữ (cửa sổ dòng lệnh đứng trong đó, exe đang chạy...)
-        for f in rel.iterdir():
-            try:
-                f.unlink()
-            except OSError:
-                sys.exit(f"Không xoá được {f}: đóng TaiVideo.exe hoặc cửa sổ đang mở thư mục này rồi chạy lại.")
-    rel.mkdir(parents=True, exist_ok=True)
+    if rel.exists():
+        # Không xoá từng file: nếu TaiVideo.exe đang chạy từ đây, xoá dở sẽ làm hỏng bản đang dùng
+        # (đã từng mất ffmpeg.exe như vậy). Đổi tên cả thư mục trước; Windows từ chối nếu có file đang mở.
+        trash = rel.with_name(f"{rel.name}.old-{int(time.time())}")
+        try:
+            rel.rename(trash)
+        except OSError:
+            sys.exit(f"Thư mục {rel} đang được dùng (có thể TaiVideo.exe đang chạy từ đó). "
+                     "Đóng app rồi chạy lại. Chưa xoá hay sửa gì trong thư mục đó.")
+        shutil.rmtree(trash, ignore_errors=True)
+    rel.mkdir(parents=True)
     shutil.copy2(exe, rel / "TaiVideo.exe")
     ff = find_ffmpeg(a.ffmpeg)
     if ff:
